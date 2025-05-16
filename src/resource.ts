@@ -4,6 +4,7 @@ import { IndexedDBHelper } from './indexeddb';
 // Define the options type for read()
 export interface ResourceReadOptions {
   fetchInit?: RequestInit;
+  key?: string; // The primary key field name (default: 'id')
 }
 
 export class Resource {
@@ -26,19 +27,20 @@ export class Resource {
   }
 
   async read(options: ResourceReadOptions = {}): Promise<any> {
-    const response = await fetch(this.uri, options.fetchInit);
+    const { fetchInit, key = 'id' } = options;
+    const response = await fetch(this.uri, fetchInit);
     const data = await response.json();
 
     if (!Array.isArray(data) || !data.every(item => typeof item === 'object')) {
       throw new Error('Returned data is not an array of objects');
     }
 
-    // Sync each object into IndexedDB, keyed by uri and id
+    // Sync each object into IndexedDB, keyed by uri and the specified key
     const dbHelper = new IndexedDBHelper();
     await Promise.all(
       data.map((obj: any) => {
-        if (obj.id === undefined) {
-          throw new Error('Each object must have an id property to be stored in IndexedDB');
+        if (obj[key] === undefined) {
+          throw new Error(`Each object must have a ${key} property to be stored in IndexedDB`);
         }
         return dbHelper.put(this.uri, obj);
       })

@@ -70,7 +70,7 @@ A class representing a resource.
 #### Methods
 
 - `create(data: any): Promise<any>`: Creates a new resource.
-- `read(): Promise<any>`: Reads the resource and returns a collection.
+- `read(options?: { key?: string, fetchInit?: RequestInit }): Promise<any>`: Reads the resource and returns a collection. The `key` option allows specifying the primary key field (default: `'id'`).
 - `update(data: any): Promise<any>`: Updates the resource.
 - `delete(): Promise<any>`: Deletes the resource.
 
