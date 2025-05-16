@@ -36,4 +36,25 @@ describe('Resource', () => {
     const items = Array.from(collection);
     expect(items).toEqual(posts);
   });
+
+  it('calls fetch with POST and correct body when create is called', async () => {
+    const newPost = { title: 'New Post' };
+    const mockResponse = { id: 3, title: 'New Post' };
+    const fetchMock = vi.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(mockResponse)
+    }));
+    // @ts-ignore
+    global.fetch = fetchMock;
+    const result = await resource.create(newPost);
+    expect(fetchMock).toHaveBeenCalledWith(
+      uri,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(newPost),
+        headers: expect.objectContaining({ 'Content-Type': 'application/json' })
+      })
+    );
+    expect(result).toEqual(mockResponse);
+  });
 });

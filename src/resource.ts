@@ -17,14 +17,27 @@ export class Resource {
     this.options = options;
   }
 
-  create(data: any): Promise<any> {
-    // Implement the create method
-    return new Promise((resolve, reject) => {
-      // Simulate an asynchronous operation
-      setTimeout(() => {
-        resolve({ message: 'Resource created', data });
-      }, 1000);
-    });
+  /**
+   * Create a new resource by making a network request.
+   * @param data The data to send in the request body
+   * @param options Optional options object. You can specify the HTTP method (default: 'POST') and fetch options.
+   */
+  async create(data: any, options: { method?: string; fetchInit?: RequestInit } = {}): Promise<any> {
+    const method = options.method || 'POST';
+    const fetchInit: RequestInit = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.fetchInit?.headers || {})
+      },
+      body: JSON.stringify(data),
+      ...options.fetchInit,
+    };
+    const response = await fetch(this.uri, fetchInit);
+    if (!response.ok) {
+      throw new Error(`Failed to create resource: ${response.status} ${response.statusText}`);
+    }
+    return response.json();
   }
 
   async read(options: ResourceReadOptions = {}): Promise<any> {
