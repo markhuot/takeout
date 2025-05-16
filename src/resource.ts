@@ -11,6 +11,7 @@ export interface ResourceReadOptions {
 export class Resource {
   private uri: string;
   private options: { [key: string]: any };
+  private _optimisticResources: any[] = []; // Store multiple optimistic resources
 
   constructor(uri: string, options: { [key: string]: any }) {
     this.uri = uri;
@@ -29,6 +30,8 @@ export class Resource {
     data: any,
     options: { method?: string; fetchInit?: RequestInit; uri?: string } = {}
   ): Promise<any> {
+    // Optimistically store the resource before the network request
+    this._optimisticResources.unshift({ ...data });
     const method = options.method || 'POST';
     const fetchInit: RequestInit = {
       method,
@@ -42,9 +45,23 @@ export class Resource {
     const resourceUri = options.uri || this.uri;
     const response = await fetch(resourceUri, fetchInit);
     if (!response.ok) {
+      // Remove the optimistic resource on failure
+      this._optimisticResources = this._optimisticResources.filter(
+        item => item !== data
+      );
       throw new Error(`Failed to create resource: ${response.status} ${response.statusText}`);
     }
-    return response.json();
+    const result = await response.json();
+    // Replace the optimistic resource with the server response (with id)
+    const optimisticIdx = this._optimisticResources.findIndex(
+      item => item === data || JSON.stringify(item) === JSON.stringify(data)
+    );
+    if (optimisticIdx !== -1) {
+      this._optimisticResources[optimisticIdx] = result;
+    } else {
+      this._optimisticResources.unshift(result);
+    }
+    return result;
   }
 
   async read(options: ResourceReadOptions = {}): Promise<any> {
@@ -57,10 +74,20 @@ export class Resource {
       throw new Error('Returned data is not an array of objects');
     }
 
+    // Prepend all optimistic resources not already present in the data
+    let items = data;
+    if (this._optimisticResources.length > 0) {
+      const existingKeys = new Set(items.map((item: any) => item[key]));
+      const optimisticToAdd = this._optimisticResources.filter(
+        (item: any) => item[key] === undefined || !existingKeys.has(item[key])
+      );
+      items = [...optimisticToAdd, ...items];
+    }
+
     // Sync each object into IndexedDB, keyed by uri and the specified key
     const dbHelper = new IndexedDBHelper();
     await Promise.all(
-      data.map((obj: any) => {
+      items.map((obj: any) => {
         if (obj[key] === undefined) {
           throw new Error(`Each object must have a ${key} property to be stored in IndexedDB`);
         }
@@ -68,7 +95,7 @@ export class Resource {
       })
     );
 
-    const collection = new Collection(data);
+    const collection = new Collection(items);
     return collection;
   }
 

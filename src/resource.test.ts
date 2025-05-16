@@ -78,4 +78,51 @@ describe('Resource', () => {
       })
     );
   });
+
+  it('prepends multiple optimistic resources to the read() results', async () => {
+    // Arrange: mock fetch for read to always return the original posts
+    const posts = [
+      { id: 1, title: 'First Post' },
+      { id: 2, title: 'Second Post' }
+    ];
+    // @ts-ignore
+    global.fetch = vi.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(posts)
+    }));
+    resource = takeout(uri, {});
+
+    // Mock fetch for create to return a new post with an id
+    const createResponses = [
+      { id: 10, title: 'Optimistic 1' },
+      { id: 11, title: 'Optimistic 2' }
+    ];
+    let createCall = 0;
+    // @ts-ignore
+    global.fetch = vi.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(createResponses[createCall++])
+    }));
+
+    // Act: create two resources optimistically
+    await resource.create({ title: 'Optimistic 1' });
+    await resource.create({ title: 'Optimistic 2' });
+
+    // Now mock fetch for read again to return the original posts
+    // @ts-ignore
+    global.fetch = vi.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(posts)
+    }));
+
+    // Act: call read
+    const collection = await resource.read();
+    const items = Array.from(collection);
+
+    // Assert: the two optimistic resources are prepended in order of creation (most recent first)
+    expect(items[0]).toEqual({ id: 11, title: 'Optimistic 2' });
+    expect(items[1]).toEqual({ id: 10, title: 'Optimistic 1' });
+    expect(items.slice(2)).toEqual(posts);
+    expect(collection.length).toBe(4);
+  });
 });
