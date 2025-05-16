@@ -6,6 +6,7 @@ export interface ResourceReadOptions {
   fetchInit?: RequestInit;
   key?: string; // The primary key field name (default: 'id')
   uri?: string; // Optional override for the resource URI
+  method?: string; // Optional HTTP method for read (default: 'GET')
 }
 
 export class Resource {
@@ -82,9 +83,9 @@ export class Resource {
   }
 
   async read(options: ResourceReadOptions = {}): Promise<any> {
-    const { fetchInit, key = 'id', uri } = options;
+    const { fetchInit, key = 'id', uri, method } = options;
     const resourceUri = uri || this.uri;
-    const response = await this._doFetch(resourceUri, { fetchInit });
+    const response = await this._doFetch(resourceUri, { fetchInit, method });
     const data = await response.json();
 
     if (!Array.isArray(data) || !data.every(item => typeof item === 'object')) {

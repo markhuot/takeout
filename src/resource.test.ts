@@ -125,4 +125,20 @@ describe('Resource', () => {
     expect(items.slice(2)).toEqual(posts);
     expect(collection.length).toBe(4);
   });
+
+  it('calls fetch with the specified method when method option is passed to read()', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(posts)
+    }));
+    // @ts-ignore
+    global.fetch = fetchMock;
+    await resource.read({ method: 'POST' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      uri,
+      expect.objectContaining({
+        method: 'POST'
+      })
+    );
+  });
 });
