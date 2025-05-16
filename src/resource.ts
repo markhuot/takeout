@@ -1,5 +1,10 @@
 import { Collection } from './collection';
 
+// Define the options type for read()
+export interface ResourceReadOptions {
+  fetchInit?: RequestInit;
+}
+
 export class Resource {
   private uri: string;
   private options: { [key: string]: any };
@@ -19,8 +24,8 @@ export class Resource {
     });
   }
 
-  async read(): Promise<any> {
-    const response = await fetch(this.uri, this.options);
+  async read(options: ResourceReadOptions = {}): Promise<any> {
+    const response = await fetch(this.uri, options.fetchInit);
     const data = await response.json();
 
     if (!Array.isArray(data) || !data.every(item => typeof item === 'object')) {
@@ -28,7 +33,6 @@ export class Resource {
     }
 
     const collection = new Collection(data);
-
     return collection;
   }
 
