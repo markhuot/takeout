@@ -17,14 +17,24 @@ export class Resource {
     });
   }
 
-  read(): Promise<any> {
-    // Implement the read method
-    return new Promise((resolve, reject) => {
-      // Simulate an asynchronous operation
-      setTimeout(() => {
-        resolve({ message: 'Resource read', data: {} });
-      }, 1000);
-    });
+  async read(): Promise<any> {
+    const response = await fetch(this.uri, this.options);
+    const data = await response.json();
+
+    if (!Array.isArray(data) || !data.every(item => typeof item === 'object')) {
+      throw new Error('Returned data is not an array of objects');
+    }
+
+    const collection = {
+      length: data.length,
+      [Symbol.iterator]: function* () {
+        for (let item of data) {
+          yield item;
+        }
+      }
+    };
+
+    return collection;
   }
 
   update(data: any): Promise<any> {

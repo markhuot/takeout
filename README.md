@@ -30,8 +30,11 @@ resource.create({ name: 'New Resource' }).then(response => {
 });
 
 // Read the resource
-resource.read().then(response => {
-  console.log(response);
+resource.read().then(collection => {
+  console.log(`Collection length: ${collection.length}`);
+  for (let item of collection) {
+    console.log(item);
+  }
 });
 
 // Update the resource
@@ -67,6 +70,6 @@ A class representing a resource.
 #### Methods
 
 - `create(data: any): Promise<any>`: Creates a new resource.
-- `read(): Promise<any>`: Reads the resource.
+- `read(): Promise<any>`: Reads the resource and returns a collection.
 - `update(data: any): Promise<any>`: Updates the resource.
 - `delete(): Promise<any>`: Deletes the resource.
