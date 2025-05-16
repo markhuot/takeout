@@ -19,6 +19,34 @@ export class Resource {
   }
 
   /**
+   * Internal helper to compose and execute fetch requests.
+   */
+  private async _doFetch(
+    uri: string,
+    options: {
+      method?: string;
+      body?: any;
+      headers?: Record<string, string>;
+      fetchInit?: RequestInit;
+    } = {}
+  ): Promise<Response> {
+    const method = options.method || 'GET';
+    let headers = { ...(this.options.headers || {}), ...(options.headers || {}) };
+    let body = options.body;
+    if (body && typeof body === 'object' && !(body instanceof FormData)) {
+      body = JSON.stringify(body);
+      headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+    }
+    const fetchInit: RequestInit = {
+      method,
+      headers,
+      body,
+      ...options.fetchInit,
+    };
+    return fetch(uri, fetchInit);
+  }
+
+  /**
    * Create a new resource by making a network request.
    * @param data The data to send in the request body
    * @param options Optional options object. You can specify the HTTP method (default: 'POST'), fetch options, and an optional uri override.
@@ -30,29 +58,18 @@ export class Resource {
     data: any,
     options: { method?: string; fetchInit?: RequestInit; uri?: string } = {}
   ): Promise<any> {
-    // Optimistically store the resource before the network request
     this._optimisticResources.unshift({ ...data });
-    const method = options.method || 'POST';
-    const fetchInit: RequestInit = {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.fetchInit?.headers || {})
-      },
-      body: JSON.stringify(data),
-      ...options.fetchInit,
-    };
     const resourceUri = options.uri || this.uri;
-    const response = await fetch(resourceUri, fetchInit);
+    const response = await this._doFetch(resourceUri, {
+      method: options.method || 'POST',
+      body: data,
+      fetchInit: options.fetchInit,
+    });
     if (!response.ok) {
-      // Remove the optimistic resource on failure
-      this._optimisticResources = this._optimisticResources.filter(
-        item => item !== data
-      );
+      this._optimisticResources = this._optimisticResources.filter(item => item !== data);
       throw new Error(`Failed to create resource: ${response.status} ${response.statusText}`);
     }
     const result = await response.json();
-    // Replace the optimistic resource with the server response (with id)
     const optimisticIdx = this._optimisticResources.findIndex(
       item => item === data || JSON.stringify(item) === JSON.stringify(data)
     );
@@ -67,7 +84,7 @@ export class Resource {
   async read(options: ResourceReadOptions = {}): Promise<any> {
     const { fetchInit, key = 'id', uri } = options;
     const resourceUri = uri || this.uri;
-    const response = await fetch(resourceUri, fetchInit);
+    const response = await this._doFetch(resourceUri, { fetchInit });
     const data = await response.json();
 
     if (!Array.isArray(data) || !data.every(item => typeof item === 'object')) {
