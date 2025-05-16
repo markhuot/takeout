@@ -20,9 +20,15 @@ export class Resource {
   /**
    * Create a new resource by making a network request.
    * @param data The data to send in the request body
-   * @param options Optional options object. You can specify the HTTP method (default: 'POST') and fetch options.
+   * @param options Optional options object. You can specify the HTTP method (default: 'POST'), fetch options, and an optional uri override.
+   *   - method: HTTP method (default: 'POST')
+   *   - fetchInit: Additional fetch options
+   *   - uri: Optional URI to use for the request (defaults to this.uri)
    */
-  async create(data: any, options: { method?: string; fetchInit?: RequestInit } = {}): Promise<any> {
+  async create(
+    data: any,
+    options: { method?: string; fetchInit?: RequestInit; uri?: string } = {}
+  ): Promise<any> {
     const method = options.method || 'POST';
     const fetchInit: RequestInit = {
       method,
@@ -33,7 +39,8 @@ export class Resource {
       body: JSON.stringify(data),
       ...options.fetchInit,
     };
-    const response = await fetch(this.uri, fetchInit);
+    const resourceUri = options.uri || this.uri;
+    const response = await fetch(resourceUri, fetchInit);
     if (!response.ok) {
       throw new Error(`Failed to create resource: ${response.status} ${response.statusText}`);
     }

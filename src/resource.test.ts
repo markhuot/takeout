@@ -57,4 +57,25 @@ describe('Resource', () => {
     );
     expect(result).toEqual(mockResponse);
   });
+
+  it('calls fetch with the uri option if provided to create()', async () => {
+    const newPost = { title: 'Another Post' };
+    const customUri = '/custom-posts';
+    const mockResponse = { id: 99, title: 'Another Post' };
+    const fetchMock = vi.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(mockResponse)
+    }));
+    // @ts-ignore
+    global.fetch = fetchMock;
+    await resource.create(newPost, { uri: customUri });
+    expect(fetchMock).toHaveBeenCalledWith(
+      customUri,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(newPost),
+        headers: expect.objectContaining({ 'Content-Type': 'application/json' })
+      })
+    );
+  });
 });
