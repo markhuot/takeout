@@ -1,4 +1,5 @@
 import { Collection } from './collection';
+import { IndexedDBHelper } from './indexeddb';
 
 // Define the options type for read()
 export interface ResourceReadOptions {
@@ -31,6 +32,17 @@ export class Resource {
     if (!Array.isArray(data) || !data.every(item => typeof item === 'object')) {
       throw new Error('Returned data is not an array of objects');
     }
+
+    // Sync each object into IndexedDB, keyed by uri and id
+    const dbHelper = new IndexedDBHelper();
+    await Promise.all(
+      data.map((obj: any) => {
+        if (obj.id === undefined) {
+          throw new Error('Each object must have an id property to be stored in IndexedDB');
+        }
+        return dbHelper.put(this.uri, obj);
+      })
+    );
 
     const collection = new Collection(data);
     return collection;
