@@ -5,6 +5,7 @@ import { IndexedDBHelper } from './indexeddb';
 export interface ResourceReadOptions {
   fetchInit?: RequestInit;
   key?: string; // The primary key field name (default: 'id')
+  uri?: string; // Optional override for the resource URI
 }
 
 export class Resource {
@@ -27,8 +28,9 @@ export class Resource {
   }
 
   async read(options: ResourceReadOptions = {}): Promise<any> {
-    const { fetchInit, key = 'id' } = options;
-    const response = await fetch(this.uri, fetchInit);
+    const { fetchInit, key = 'id', uri } = options;
+    const resourceUri = uri || this.uri;
+    const response = await fetch(resourceUri, fetchInit);
     const data = await response.json();
 
     if (!Array.isArray(data) || !data.every(item => typeof item === 'object')) {
@@ -42,7 +44,7 @@ export class Resource {
         if (obj[key] === undefined) {
           throw new Error(`Each object must have a ${key} property to be stored in IndexedDB`);
         }
-        return dbHelper.put(this.uri, obj);
+        return dbHelper.put(resourceUri, obj);
       })
     );
 
