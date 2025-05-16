@@ -9,6 +9,13 @@ export interface ResourceReadOptions {
   method?: string; // Optional HTTP method for read (default: 'GET')
 }
 
+// Define the options type for create()
+export interface ResourceCreateOptions {
+  method?: string; // HTTP method (default: 'POST')
+  fetchInit?: RequestInit; // Additional fetch options
+  uri?: string; // Optional URI to use for the request (defaults to this.uri)
+}
+
 export class Resource {
   private uri: string;
   private options: { [key: string]: any };
@@ -51,13 +58,10 @@ export class Resource {
    * Create a new resource by making a network request.
    * @param data The data to send in the request body
    * @param options Optional options object. You can specify the HTTP method (default: 'POST'), fetch options, and an optional uri override.
-   *   - method: HTTP method (default: 'POST')
-   *   - fetchInit: Additional fetch options
-   *   - uri: Optional URI to use for the request (defaults to this.uri)
    */
   async create(
     data: any,
-    options: { method?: string; fetchInit?: RequestInit; uri?: string } = {}
+    options: ResourceCreateOptions = {}
   ): Promise<any> {
     this._optimisticResources.unshift({ ...data });
     const resourceUri = options.uri || this.uri;
