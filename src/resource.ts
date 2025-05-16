@@ -1,3 +1,5 @@
+import { Collection } from './collection';
+
 export class Resource {
   private uri: string;
   private options: { [key: string]: any };
@@ -25,14 +27,7 @@ export class Resource {
       throw new Error('Returned data is not an array of objects');
     }
 
-    const collection = {
-      length: data.length,
-      [Symbol.iterator]: function* () {
-        for (let item of data) {
-          yield item;
-        }
-      }
-    };
+    const collection = new Collection(data);
 
     return collection;
   }

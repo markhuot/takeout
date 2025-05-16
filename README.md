@@ -73,3 +73,15 @@ A class representing a resource.
 - `read(): Promise<any>`: Reads the resource and returns a collection.
 - `update(data: any): Promise<any>`: Updates the resource.
 - `delete(): Promise<any>`: Deletes the resource.
+
+### `Collection`
+
+A class representing a collection of objects.
+
+#### Properties
+
+- `length`: Returns the length of the collection.
+
+#### Methods
+
+- `[Symbol.iterator](): Iterator<object>`: Iterates over the collection.
